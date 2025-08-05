@@ -2,7 +2,7 @@ name: Generate Daily Quote
 
 on:
   schedule:
-    - cron: '0 8 * * *'  # Her gün sabah 08:00'de (UTC) çalışır
+    - cron: '50 * * * *'  # Her gün sabah 08:00'de (UTC) çalışır
   workflow_dispatch:       # Manuel tetikleme
 
 permissions:
