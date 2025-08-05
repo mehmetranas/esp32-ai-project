@@ -2,14 +2,18 @@ name: Generate Daily Quote
 
 on:
   schedule:
-    - cron: '0 8 * * *' # Her gün sabah 08:00'de çalışır
-  workflow_dispatch:
+    - cron: '0 8 * * *'  # Her gün sabah 08:00'de (UTC) çalışır
+  workflow_dispatch:       # Manuel tetikleme
+
+permissions:
+  contents: write          # push için gerekli izin
 
 jobs:
   generate:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Generate quote with Gemini 2.0 Flash
@@ -30,9 +34,12 @@ jobs:
                   ]
                 }')
 
+          echo "Gemini response: $RESPONSE"
+
           QUOTE=$(echo "$RESPONSE" | jq -r '.candidates[0].content.parts[0].text' | tr -d '\n' | head -c 160)
 
           echo "{\"quote\": \"$QUOTE\"}" > quote.json
+          echo "Generated quote: $QUOTE"
 
       - name: Commit and push quote.json
         run: |
@@ -40,4 +47,4 @@ jobs:
           git config user.email "action@github.com"
           git add quote.json
           git commit -m "Günlük özlü söz güncellendi: $(date '+%Y-%m-%d')" || echo "Değişiklik yok"
-          git push
+          git push origin main
