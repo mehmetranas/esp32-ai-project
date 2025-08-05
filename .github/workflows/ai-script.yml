@@ -1,0 +1,43 @@
+name: Generate Daily Quote
+
+on:
+  schedule:
+    - cron: '0 8 * * *' # Her gün sabah 08:00'de çalışır
+  workflow_dispatch:
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Generate quote with Gemini 2.0 Flash
+        run: |
+          RESPONSE=$(curl -s "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent" \
+            -H 'Content-Type: application/json' \
+            -H "X-goog-api-key: ${{ secrets.GEMINI_API_KEY }}" \
+            -X POST \
+            -d '{
+                  "contents": [
+                    {
+                      "parts": [
+                        {
+                          "text": "160 karakteri geçmeyen, anlamlı, kısa ve etkileyici bir özlü söz üret. Cevap sadece özlü söz olsun, açıklama ya da başka bir bilgi olmasın."
+                        }
+                      ]
+                    }
+                  ]
+                }')
+
+          QUOTE=$(echo "$RESPONSE" | jq -r '.candidates[0].content.parts[0].text' | tr -d '\n' | head -c 160)
+
+          echo "{\"quote\": \"$QUOTE\"}" > quote.json
+
+      - name: Commit and push quote.json
+        run: |
+          git config user.name "github-actions"
+          git config user.email "action@github.com"
+          git add quote.json
+          git commit -m "Günlük özlü söz güncellendi: $(date '+%Y-%m-%d')" || echo "Değişiklik yok"
+          git push
